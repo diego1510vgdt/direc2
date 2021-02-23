@@ -24,7 +24,7 @@ def get_tasks():
 def get_task(id):
     if(ref.child("tasks").child(str(id)).get()==None):
         abort(404)
-    return jsonify(ref.child("tasks").child(cid).get())
+    return jsonify(ref.child("tasks").child(str(id)).get())
 
 @app.route('/api/tasks', methods = ['POST'])
 def create_task():
@@ -43,22 +43,24 @@ def update_task(task_id):
         abort(404)
     if not request.json:
         abort(400)
+    """
     if 'name' in request.json and type(request.json['name']) is not str:
         abort(400)
     if 'check' in request.json and type(request.json['check']) is not bool:
         abort(400)
-    ref.child("tasks").child(str(id)).update({
-        "check": request.json.get('check', ref.child("tasks").child(str(id)).child("check").get),
-        "name": request.json.get('name', ref.child("tasks").child(str(id)).child("name").get)
+    """
+    ref.child("tasks").child(str(task_id)).update({
+        "name": request.json.get('name', ref.child("tasks").child(str(task_id)).child("name").get),
+        "check": request.json.get('check', ref.child("tasks").child(str(task_id)).child("check").get)
     })
+    
     return jsonify(ref.child("tasks").child(str(task_id)).get())
 
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
-    task =[task for task in tasks if task['id'] == task_id]
-    if len(task) == 0:
+    if ref.child("tasks").child(str(task_id)).get()==None:
         abort(404)
-    tasks.remove(task[0])
+    ref.child("tasks").child(str(task_id)).delete()
     return jsonify({'result': True})
 
 
