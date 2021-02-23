@@ -1,21 +1,16 @@
 from flask import Flask, jsonify, abort, request
-
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import db
 
 app = Flask(__name__)
 
-tasks = [
-    {
-        'id': 1,
-        'name': 'blablabla',
-        'check': False
+cred = credentials.Certificate("firebase_adminsdk.json")
+default_app = firebase_admin.initialize_app(cred,{
+    'databaseURL':'https://test-api-374a2-default-rtdb.firebaseio.com/'
+})
 
-    },
-    {
-        'id': 2,
-        'name': 'blablabla',
-        'check': True
-    }
-]
+ref = db.reference('/')
 
 @app.route('/')
 def hello_world():
@@ -23,35 +18,28 @@ def hello_world():
 
 @app.route('/api/tasks', methods=['GET'])
 def get_tasks():
-    return jsonify({'tasks': tasks})
+    return ref.get()
 
 @app.route('/api/tasks/<int:id>', methods=['GET'])
 def get_task(id):
-    this_task = [task for task in tasks if task['id'] == id]
-    #this_task = 0
-    #for task in tasks:
-        #if id == task['id']:
-            #this_task = task
-    if len(this_task) == 0:
+    if(ref.child("tasks").child(str(id)).get()==None):
         abort(404)
-    return jsonify({'task':this_task})
+    return jsonify(ref.child("tasks").child(cid).get())
 
 @app.route('/api/tasks', methods = ['POST'])
 def create_task():
     if not request.json:
         abort(404)
-    task = {
-        'id': len(tasks)+1,
-        'name': request.json['name'],
-        'check': False
-    }
-    tasks.append(task)
-    return jsonify({'task': task}), 201
+    id = len(ref.child("tasks").get())
+    ref.child("tasks").child(str(id)).set({
+        "check": False,
+        "name": request.json['name']
+    })
+    return jsonify(ref.child("tasks").child(str(id)).get()), 201
 
 @app.route('/api/tasks/<int:task_id>', methods = ['PUT'])
 def update_task(task_id):
-    this_task = [task for task in tasks if task['id'] == task_id]
-    if len(this_task) == 0:
+    if ref.child("tasks").child(str(task_id)).get()==None:
         abort(404)
     if not request.json:
         abort(400)
@@ -59,9 +47,11 @@ def update_task(task_id):
         abort(400)
     if 'check' in request.json and type(request.json['check']) is not bool:
         abort(400)
-    this_task[0]['name'] = request.json.get('name', this_task[0]['name'])
-    this_task[0]['check'] = request.json.get('check', this_task[0]['check'])
-    return jsonify({'task': this_task[0]})
+    ref.child("tasks").child(str(id)).update({
+        "check": request.json.get('check', ref.child("tasks").child(str(id)).child("check").get),
+        "name": request.json.get('name', ref.child("tasks").child(str(id)).child("name").get)
+    })
+    return jsonify(ref.child("tasks").child(str(task_id)).get())
 
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
