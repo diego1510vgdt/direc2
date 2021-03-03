@@ -2,8 +2,6 @@ import os
 from flask import Flask, request, jsonify, abort
 from firebase_admin import credentials, db, initialize_app
 
-#Inicializar la app con Flask
-
 app = Flask(__name__)
 
 cred = credentials.Certificate('firebase_adminsdk.json')
