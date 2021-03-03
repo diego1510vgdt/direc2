@@ -1,77 +1,86 @@
-from flask import Flask, jsonify, abort, request
-
+import os
+from flask import Flask, request, jsonify, abort
+from firebase_admin import credentials, db, initialize_app
 
 app = Flask(__name__)
 
-tasks = [
-    {
-        'id': 1,
-        'name': 'blablabla',
-        'check': False
+cred = credentials.Certificate('firebase_adminsdk.json')
+default_app = initialize_app(cred,{
+    'databaseURL':'https://test-api-374a2-default-rtdb.firebaseio.com/'
+})
 
-    },
-    {
-        'id': 2,
-        'name': 'blablabla',
-        'check': True
-    }
-]
+ref = db.reference('tasks')
 
-@app.route('/')
-def hello_world():
-    return 'Bienvenido! API To-Do List'
+"""
+@app.route('/', methods=['POST'])
+def setting():
+    ref.set({
+        'tasks': {
+            '1':{
+                'id':'1',
+                'name':'Primer tarea',
+                'check':False
+            }
+        }
+    })
+"""
 
-@app.route('/api/tasks', methods=['GET'])
-def get_tasks():
-    return jsonify({'tasks': tasks})
+@app.route('/read', methods=['GET'])
+def read():
+    try:
+        id = request.args.get('id')
+        if id:
+            return jsonify(ref.child(id).get()), 200
+        else: 
+            return jsonify(ref.get()), 200
+    except Exception as e:
+        return f"Ocurrio el siguiente error: {e}"
 
-@app.route('/api/tasks/<int:id>', methods=['GET'])
-def get_task(id):
-    this_task = [task for task in tasks if task['id'] == id]
-    #this_task = 0
-    #for task in tasks:
-        #if id == task['id']:
-            #this_task = task
-    if len(this_task) == 0:
-        abort(404)
-    return jsonify({'task':this_task})
-
-@app.route('/api/tasks', methods = ['POST'])
-def create_task():
-    if not request.json:
-        abort(404)
-    task = {
-        'id': len(tasks)+1,
-        'name': request.json['name'],
-        'check': False
-    }
-    tasks.append(task)
-    return jsonify({'task': task}), 201
-
-@app.route('/api/tasks/<int:task_id>', methods = ['PUT'])
-def update_task(task_id):
-    this_task = [task for task in tasks if task['id'] == task_id]
-    if len(this_task) == 0:
-        abort(404)
-    if not request.json:
-        abort(400)
-    if 'name' in request.json and type(request.json['name']) is not str:
-        abort(400)
-    if 'check' in request.json and type(request.json['check']) is not bool:
-        abort(400)
-    this_task[0]['name'] = request.json.get('name', this_task[0]['name'])
-    this_task[0]['check'] = request.json.get('check', this_task[0]['check'])
-    return jsonify({'task': this_task[0]})
-
-@app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
-def delete_task(task_id):
-    task =[task for task in tasks if task['id'] == task_id]
-    if len(task) == 0:
-        abort(404)
-    tasks.remove(task[0])
-    return jsonify({'result': True})
+@app.route('/add', methods=['POST'])
+def create():
+    try:
+        if not request.json:
+            abort(404)
+        id = str(len(ref.get()))
+        task = {
+            'id': id,
+            'name': request.json['name'],
+            'check': False
+        }
+        ref.child(id).set(task)
+        return jsonify({"succes": True}), 200
+    except Exception as e:
+        return f"Ocurrio el siguiente error: {e}"
 
 
+@app.route('/update', methods=['PUT'])
+def update():
+    try:
+        id = request.json['id']
+        if ref.child(id).get()==None:
+            abort(404)
+        if not request.json:
+            abort(400)
+        ref.child(id).update(request.json)
+        return jsonify({"succes": True}), 200
+    except Exception as e:
+        return f"Ocurrio el siguiente error: {e}"
+
+@app.route('/delete', methods=['DELETE'])
+def delete():
+    try:
+        id = request.args.get('id')
+        if ref.child(id).get()==None:
+            abort(404)
+        ref.child(id).delete()
+        return jsonify({"succes": True}), 200
+    except Exception as e:
+        return f"Ocurrio el siguiente error: {e}"
+
+port = int(os.environ.get('PORT',8000))
 if __name__ == '__main__':
+    app.run(threaded=True, host='0.0.0.0', port=port)
     app.run(debug=True)
 
+#set FLASK_APP=app.py
+#flask run
