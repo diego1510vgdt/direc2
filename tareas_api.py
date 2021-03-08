@@ -11,20 +11,6 @@ default_app = initialize_app(cred,{
 
 ref = db.reference('tasks')
 
-"""
-@app.route('/', methods=['POST'])
-def setting():
-    ref.set({
-        'tasks': {
-            '1':{
-                'id':'1',
-                'name':'Primer tarea',
-                'check':False
-            }
-        }
-    })
-"""
-
 @app.route('/read', methods=['GET'])
 def read():
     try:
@@ -61,9 +47,6 @@ def update():
             abort(404)
         if not request.json:
             abort(400)
-        """if type(request.json['name']) is not str or type(request.json['check']) is not bool:
-            #print(f"Name {request.json['name']}")
-            abort(400)"""
         if 'name' in request.json and type(request.json['name']) is not str:
             abort(400)
         if 'check' in request.json and type(request.json['check']) is not bool:
