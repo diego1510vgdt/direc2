@@ -1,0 +1,5 @@
+steps:
+  name: "grc.io/kaniko-project/executor:latest"
+  args: ["--cache-true", "--cache-ttl=48h", "--destination=grc.io/$PROJECT_ID/todo:latest"]
+  name: "grc.io/cloud-builders/gcloud"
+  args: ['beta', 'run', 'deploy', 'todo', '--image', 'grc.io/$PROJECT_ID/todo:latest', '--region', 'us-central1','--allow-unauthenticated', '--platform', 'managed']

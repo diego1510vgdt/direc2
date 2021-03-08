@@ -61,6 +61,13 @@ def update():
             abort(404)
         if not request.json:
             abort(400)
+        """if type(request.json['name']) is not str or type(request.json['check']) is not bool:
+            #print(f"Name {request.json['name']}")
+            abort(400)"""
+        if 'name' in request.json and type(request.json['name']) is not str:
+            abort(400)
+        if 'check' in request.json and type(request.json['check']) is not bool:
+            abort(400)
         ref.child(id).update(request.json)
         return jsonify({"succes": True}), 200
     except Exception as e:
@@ -82,5 +89,5 @@ if __name__ == '__main__':
     app.run(threaded=True, host='0.0.0.0', port=port)
     app.run(debug=True)
 
-#set FLASK_APP=app.py
-#flask run
+#set FLASK_APP=tareas_api.py
+#flask run  
